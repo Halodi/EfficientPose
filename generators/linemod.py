@@ -43,7 +43,7 @@ class LineModGenerator(Generator):
     def __init__(self, 
                  dataset_base_path,
                  object_id,
-                 image_extension = ".png",
+                 rgb_extension = ".jpg", mask_extension = ".png", depth_extension = ".png",
                  shuffle_dataset = True,
                   symmetric_objects = {"glue", 11, "eggbox", 10}, #set with names and indices of symmetric objects
                  **kwargs):
@@ -52,7 +52,9 @@ class LineModGenerator(Generator):
         Args:
             dataset_base_path: path to the Linemod dataset
             object_id: Integer object id of the Linemod object on which to generate data
-            image_extension: String containing the image filename extension
+            rgb_extension: String containing the RGB image filename extension
+            mask_extension: String containing the mask image filename extension
+            depth_extension: String containing the depth image filename extension
             shuffle_dataset: Boolean wheter to shuffle the dataset or not
              symmetric_objects: set with names and indices of symmetric objects
         
@@ -61,7 +63,7 @@ class LineModGenerator(Generator):
         self.dataset_path = os.path.join(self.dataset_base_path, "data")
         self.model_path = os.path.join(self.dataset_base_path, "models")
         self.object_id = object_id
-        self.image_extension = image_extension
+        self.rgb_extension, self.mask_extension, self.depth_extension = rgb_extension, mask_extension, depth_extension
         self.shuffle_dataset = shuffle_dataset
         self.translation_parameter = 3
         self.symmetric_objects = symmetric_objects
@@ -105,7 +107,12 @@ class LineModGenerator(Generator):
         #get the model with the given object id
         self.model_dict = self.all_models_dict[self.object_id]
         #load the complete 3d model from the ply file
-        self.model_3d_points = self.load_model_ply(path_to_ply_file = os.path.join(self.model_path, "obj_{:02}.ply".format(self.object_id)))
+        np_vert_file_ = os.path.join(self.model_path, str(self.object_id)+'.npy')
+        if os.path.exists(np_vert_file_):
+            with open(np_vert_file_, 'rb') as f:
+                self.model_3d_points = np.load(f)
+        else: self.model_3d_points = self.load_model_ply(path_to_ply_file = os.path.join(self.model_path, "obj_{:02}.ply".format(self.object_id)))       
+        
         self.class_to_model_3d_points = {0: self.model_3d_points}
         self.name_to_model_3d_points = {"object": self.model_3d_points}
         
@@ -345,16 +352,22 @@ class LineModGenerator(Generator):
             infos: List with all info dictionaries (intrinsic camera parameters) in the dataset split
     
         """
-        all_images_path = os.path.join(object_path, "rgb")
+        '''all_images_path = os.path.join(object_path, "rgb")
         
         #load all images which are in the dataset split (train/test)
         all_filenames = [filename for filename in os.listdir(all_images_path) if self.image_extension in filename and filename.replace(self.image_extension, "") in data_examples]
         image_paths = [os.path.join(all_images_path, filename) for filename in all_filenames]
         mask_paths = [img_path.replace("rgb", "mask") for img_path in image_paths]
-        depth_paths = [img_path.replace("rgb", "depth") for img_path in image_paths]
+        depth_paths = [img_path.replace("rgb", "depth") for img_path in image_paths]'''
+
+        rgb_dir_, mask_dir_, depth_dir_ = os.path.join(object_path, 'rgb'), os.path.join(object_path, 'mask'), os.path.join(object_path, 'depth')
+        image_paths = [ os.path.join(rgb_dir_,   fn+self.rgb_extension  ) for fn in data_examples ]
+        mask_paths  = [ os.path.join(mask_dir_,  fn+self.mask_extension ) for fn in data_examples ]
+        depth_paths = [ os.path.join(depth_dir_, fn+self.depth_extension) for fn in data_examples ]
         
         #parse the example ids for the gt dict from filenames
-        example_ids = [int(filename.split(".")[0]) for filename in all_filenames]
+        #example_ids = [int(filename.split(".")[0]) for filename in all_filenames]
+        example_ids = [ int(fn) for fn in data_examples ]
         filtered_gt_lists = [gt_dict[key] for key in example_ids]#creates a list containing lists of all annotations per image. usually one element but at object id 2 is also the occlusion dataset included
         filtered_gts = []
         for gt_list in filtered_gt_lists:
