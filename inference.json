@@ -1,6 +1,4 @@
 {
-    "zed_stream_address_": "10.4.0.30:30000",
-    
     "object_index_map": "/home/james/temp/gen_data/alproChoc_efficientPose.json",
     "weights": "/home/james/workspace/dl/EfficientPose/phi_0_linemod_best_ADD_alprochoc.h5",
     "phi": 0,

@@ -2,7 +2,7 @@ import sys, json
 import numpy as np
 from inference_webcam import build_model_and_load_weights, preprocess, postprocess
 from scipy.spatial.transform import Rotation
-from typing import Dict, List
+from typing import Dict
 
 import rclpy, tf2_ros
 from std_msgs.msg import Header
