@@ -5,7 +5,6 @@ from inference_helper_fns import load_object_index_map
 from inference_conversions import *
 
 import rclpy, tf2_ros
-from rclpy import clock
 from std_msgs.msg import Header
 from builtin_interfaces.msg import Time
 from geometry_msgs.msg import PoseArray
@@ -28,7 +27,7 @@ class InferenceClient:
         self._input_buffer = np.memmap(args_['_image_file'], mode='w+', dtype=np.uint8, shape=( 1, 1 + (height * width * 3) ))
         self._input_buffer_counter = np.memmap(args_['_image_file'], mode='r+', dtype=np.uint8, shape=( 1, 1 ))
         self._detections_buffer = np.memmap(args_['_detections_file'], mode='w+', dtype=float, shape=( 1, 1 + (args_['max_detections'] * 8) ))
-        self._last_recv_value, self._det_shape, self._detections = self._detections_buffer[0,0], ( args_['max_detections'], 8 ), {}
+        self._last_recv_value, self._det_shape, self._detections = self._detections_buffer[0,0], ( args_['max_detections'], 8 ), []
 
         args_fp_out_ = args_fp[:args_fp.rfind('.')] + '_extended.json'
         with open(args_fp_out_, 'w') as f: json.dump(args_, f, indent=2)
@@ -64,13 +63,13 @@ class InferenceClient:
                 self._last_recv_value = self._detections_buffer[0,0]
                 detections_array_ = np.reshape(self._detections_buffer[0,1:], self._det_shape)
 
-                self._detections.clear()
+                self._detections = []
                 for detection in detections_array_:
                     label_ = self._object_index_map.get(int(detection[0]))
                     if label_ is None: continue
-                    t_ = np.asarray([ detection[7], -detection[5], -detection[6] ]) / self._translation_scale_norm
                     r_ = Rotation.from_rotvec([ detection[4], -detection[2], -detection[3] ])
-                    self._detections[label_] = ( detection[1], r_, t_ )
+                    t_ = np.asarray([ detection[7], -detection[5], -detection[6] ]) / self._translation_scale_norm
+                    self._detections.append(( label_, detection[1], r_, t_ ))
 
                 return True
 
@@ -85,8 +84,8 @@ class InferenceClient:
             self._camera_ext_mat = transform_to_matrix4x4(camera_stf_.transform)
 
         pose_arrays_ = { k:[] for k in self._object_index_map.values() }
-        for label, detection in self._detections.items():
-            m_local_ = translation_and_rotation_to_matrix4x4(detection[2], detection[1])
+        for label, score, rotation, translation in self._detections:
+            m_local_ = translation_and_rotation_to_matrix4x4(translation, rotation)
             pose_msg_ = matrix4x4_to_pose_msg(np.matmul(self._camera_ext_mat, m_local_))
             pose_arrays_[label].append(pose_msg_)
 

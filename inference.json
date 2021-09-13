@@ -1,6 +1,6 @@
 {
-    "object_index_map": "/home/james/temp/gen_data/alproChoc_efficientPose/object_index_map.json",
-    "weights": "/home/james/workspace/dl/EfficientPose/phi_0_linemod_best_ADD_alprochoc.h5",
+    "object_index_map": "/home/james/temp/gen_data/saetreSalinas_efficientPose/object_index_map.json",
+    "weights": "/home/james/workspace/dl/EfficientPose/checkpoints/10_09_2021_15_56_57/object_0/phi_0_linemod_best_ADD.h5",
     "cuda_device": 0,
     "phi": 0,
     "score_threshold": 0.5,
