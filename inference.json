@@ -1,7 +1,10 @@
 {
-    "object_index_map": "/home/james/temp/gen_data/alproChoc_efficientPose.json",
+    "object_index_map": "/home/james/temp/gen_data/alproChoc_efficientPose/object_index_map.json",
     "weights": "/home/james/workspace/dl/EfficientPose/phi_0_linemod_best_ADD_alprochoc.h5",
     "phi": 0,
     "score_threshold": 0.5,
-    "translation_scale_norm": 1000.0
+    "translation_scale_norm": 1000.0,
+
+    "max_detections": 10,
+    "recv_timeout": 5.0
 }
