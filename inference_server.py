@@ -1,12 +1,15 @@
-import json
+import json, os
 import numpy as np
-from inference_webcam import build_model_and_load_weights, preprocess, postprocess
+from inference_webcam import allow_gpu_growth_memory, build_model_and_load_weights, preprocess, postprocess
 from inference_helper_fns import load_object_index_map
 from time import perf_counter
 
 class InferenceServer:
     def __init__(self, args:dict, load_model:bool=True) -> None:
         if load_model:
+            os.environ['CUDA_VISIBLE_DEVICES'] = str(args['cuda_device'])
+            allow_gpu_growth_memory()
+
             oim_ = load_object_index_map(args['object_index_map'])
             self._camera_matrix = np.asarray(args['_camera_matrix']).reshape(3,3)
             self._score_threshold, self._translation_scale_norm = args['score_threshold'], args['translation_scale_norm']

@@ -92,7 +92,7 @@ class InferenceClientZed(InferenceClient):
                 print('--------------------------')
 
                 for label, detection_data in self._detections.items():
-                    print([label, detection_data[0]])
+                    print([label, detection_data[0], detection_data[2]])
 
                 print('--------------------------')
 
