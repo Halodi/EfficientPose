@@ -8,7 +8,8 @@ class InferenceServer:
     def __init__(self, args:dict, load_model:bool=True) -> None:
         if load_model:
             oim_ = load_object_index_map(args['object_index_map'])
-            self._camera_matrix, self._score_threshold, self._translation_scale_norm = args['_camera_matrix'], args['score_threshold'], args['translation_scale_norm']
+            self._camera_matrix = np.asarray(args['_camera_matrix']).reshape(3,3)
+            self._score_threshold, self._translation_scale_norm = args['score_threshold'], args['translation_scale_norm']
             self._model, self._image_size = build_model_and_load_weights(args['phi'], len(oim_), self._score_threshold, args['weights'])
         else: self._model = None
 
@@ -19,8 +20,11 @@ class InferenceServer:
         self._last_recv_value, self._detections = self._input_buffer[0,0], np.zeros(( args['max_detections'], 8 ), float)
 
     def loop(self) -> None:
+        self._detections_buffer_counter[0,0] += 1.0
+        self._detections_buffer_counter.flush()
+
         while True:
-            if not self._recv(): break
+            if not self._recv(): continue
 
             self._detections[:,0] = -1
 
@@ -34,7 +38,6 @@ class InferenceServer:
                     self._detections[wI_,0], self._detections[wI_,1] = labels[i], scores[i]
                     self._detections[wI_,2:5], self._detections[wI_,5:8] = rotations[i], translations[i]                
                     wI_ += 1
-            else: print("EfficientPose inference server: Received data, but model was not loaded")
 
             self._detections_buffer[0,1:] = self._detections.ravel()
             self._detections_buffer.flush()

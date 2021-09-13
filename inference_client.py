@@ -1,6 +1,6 @@
 import json, tempfile, os
 import numpy as np
-from time import perf_counter
+from time import perf_counter, sleep
 from inference_helper_fns import load_object_index_map
 
 class InferenceClient:
@@ -48,6 +48,13 @@ class InferenceClient:
 
                 return True
 
+    def _wait_for_server(self):
+        while True:
+            if self._detections_buffer[0,0] != self._last_recv_value:
+                self._last_recv_value = self._detections_buffer[0,0]
+                return
+            else: sleep(1.0)
+
 if __name__ == '__main__':
 
     import sys
@@ -55,7 +62,7 @@ if __name__ == '__main__':
 
     w_, h_ = 3, 3
 
-    ic_ = InferenceClient(sys.argv[1], w_, h_, np.random.random_sample([3,3]))
+    ic_ = InferenceClient(sys.argv[1], w_, h_, np.eye(3))
 
     while True:
         input_ = (np.random.random_sample([h_,w_,3]) * 255).astype(np.uint8)
