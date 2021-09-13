@@ -80,8 +80,8 @@ class InferenceClientZed(InferenceClient):
         self._latest_frame_processed = False
 
     def spin(self):
-        self._node.get_logger().info("Waiting duration of \"recv_timeout\" before starting ZED callback ...")
-        sleep(self._timeout)
+        self._node.get_logger().info("Waiting for EfficientPose server ...")
+        self._wait_for_server()
         self._node.create_timer(self._nominal_frame_period, self._zed_cb)
         self._node.get_logger().info("ZED callback started")
 

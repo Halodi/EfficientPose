@@ -19,8 +19,11 @@ class InferenceServer:
         self._last_recv_value, self._detections = self._input_buffer[0,0], np.zeros(( args['max_detections'], 8 ), float)
 
     def loop(self) -> None:
+        self._detections_buffer_counter[0,0] += 1.0
+        self._detections_buffer_counter.flush()
+
         while True:
-            if not self._recv(): break
+            if not self._recv(): continue
 
             self._detections[:,0] = -1
 
@@ -34,7 +37,6 @@ class InferenceServer:
                     self._detections[wI_,0], self._detections[wI_,1] = labels[i], scores[i]
                     self._detections[wI_,2:5], self._detections[wI_,5:8] = rotations[i], translations[i]                
                     wI_ += 1
-            else: print("EfficientPose inference server: Received data, but model was not loaded")
 
             self._detections_buffer[0,1:] = self._detections.ravel()
             self._detections_buffer.flush()
