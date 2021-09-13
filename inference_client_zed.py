@@ -89,7 +89,12 @@ class InferenceClientZed(InferenceClient):
             rclpy.spin_once(self._node)
 
             if self._recv():
-                print(len(self._detections))
+                print('--------------------------')
+
+                for label, detection_data in self._detections.items():
+                    print([label, detection_data[0]])
+
+                print('--------------------------')
 
                 '''image_ns_ = self._zed.get_timestamp(sl.TIME_REFERENCE.IMAGE).get_nanoseconds()
                 current_ns_ = self._zed.get_timestamp(sl.TIME_REFERENCE.CURRENT).get_nanoseconds()        
