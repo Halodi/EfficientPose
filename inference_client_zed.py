@@ -1,15 +1,11 @@
 from inference_client import InferenceClient
 from inference_helper_fns import generate_camera_matrix
 
-from os import getpid
-import rclpy
-
 import pyzed.sl as sl
 import numpy as np
 from time import sleep
 
-from tf2_ros.transform_broadcaster import TransformBroadcaster
-
+import rclpy
 
 
 def open_zed(stream_address:str=None):
@@ -44,12 +40,11 @@ def get_zed_fps(zed:sl.Camera, runtime_parameters:sl.RuntimeParameters, n=10) ->
 
 class InferenceClientZed(InferenceClient):
     def __init__(self, args_fp:str, zed_stream_address:str=None):
-        self._node = rclpy.create_node("efficientPoseZed_" + str(getpid()))
         self._zed, self._zed_runtime_parameters = open_zed(zed_stream_address)
         if self._zed is None:
-            self._node.get_logger().error("Unable to connect to ZED")
+            print("Unable to connect to ZED")
             return
-        else: self._node.get_logger().info("Connected to ZED")
+        else: print("Connected to ZED")
 
         calib_ = self._zed.get_camera_information().calibration_parameters.left_cam
         w_, h_ = calib_.image_size.width, calib_.image_size.height
@@ -89,17 +84,11 @@ class InferenceClientZed(InferenceClient):
             rclpy.spin_once(self._node)
 
             if self._recv():
-                print('--------------------------')
-
-                for label, detection_data in self._detections.items():
-                    print([label, detection_data[0], detection_data[2]])
-
-                print('--------------------------')
-
-                '''image_ns_ = self._zed.get_timestamp(sl.TIME_REFERENCE.IMAGE).get_nanoseconds()
+                image_ns_ = self._zed.get_timestamp(sl.TIME_REFERENCE.IMAGE).get_nanoseconds()
                 current_ns_ = self._zed.get_timestamp(sl.TIME_REFERENCE.CURRENT).get_nanoseconds()        
-                time_offset_fs_ = (image_ns_ - current_ns_) / 1e9'''
-
+                time_offset_fs_ = (image_ns_ - current_ns_) / 1e9
+                self._publish(time_offset_fs_)
+                
                 self._latest_frame_processed = True
 
         self._node.destroy_node()
