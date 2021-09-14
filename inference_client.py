@@ -33,7 +33,7 @@ class InferenceClient:
         args_fp_out_ = args_fp[:args_fp.rfind('.')] + '_extended.json'
         with open(args_fp_out_, 'w') as f: json.dump(args_, f, indent=2)
 
-        self._filters = FilterMultiLabels(args_['filter'], self._object_index_map.values()) if 'filter' in args_ else None
+        self._filters = FilterMultiLabels(args_['filters']) if 'filters' in args_ else None
         self._init_rclpy_comms(args_['ros'])        
 
     def _init_rclpy_comms(self, args:dict):

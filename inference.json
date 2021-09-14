@@ -8,13 +8,16 @@
     "max_detections": 10,
     "recv_timeout": 5.0,
 
-    "filter":
+    "filters":
     {
-        "max_instances_per_label": 5,
-        "width": 10,
-        "translation_radius_threshold": 0.1,
-        "min_count": 3,
-        "clear_after_no_update_count": 5
+        "Saetre_Salinas":
+        {
+            "max_instances_per_label": 5,
+            "width": 10,
+            "translation_radius_threshold": 0.1,
+            "min_count": 3,
+            "clear_after_no_update_count": 5
+        }
     },
 
     "ros":

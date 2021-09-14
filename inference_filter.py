@@ -121,8 +121,8 @@ class FilterMulti:
 
 
 class FilterMultiLabels:
-    def __init__(self, args:dict, labels:Iterable[str]):
-        self._filters = { label:FilterMulti(args) for label in labels }
+    def __init__(self, args:Dict[str,dict]):
+        self._filters = { label:FilterMulti(a) for label,a in args.items() }
 
     def __getitem__(self, label:str): return self._filters.get(label)
 
