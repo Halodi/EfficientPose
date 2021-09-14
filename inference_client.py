@@ -3,6 +3,7 @@ import numpy as np
 from time import perf_counter, sleep
 from inference_helper_fns import load_object_index_map
 from inference_conversions import *
+from inference_filter import FilterMultiLabels
 
 import rclpy, tf2_ros
 from std_msgs.msg import Header
@@ -32,13 +33,20 @@ class InferenceClient:
         args_fp_out_ = args_fp[:args_fp.rfind('.')] + '_extended.json'
         with open(args_fp_out_, 'w') as f: json.dump(args_, f, indent=2)
 
-        self._node = rclpy.create_node("efficientPoseClient_" + str(os.getpid()))
-        self._camera_frame, self._publish_frame, self._camera_ext_mat = args_['camera_frame'], args_['publish_frame'], np.eye(4)
+        self._filters = FilterMultiLabels(args_['filter'], self._object_index_map.values()) if 'filter' in args_ else None
+        self._init_rclpy_comms(args_['ros'])        
+
+    def _init_rclpy_comms(self, args:dict):
+        self._node = rclpy.create_node("efficientpose_" + str(os.getpid()), namespace=args.get('namespace', None))
+        self._camera_frame, self._publish_frame, self._camera_ext_mat = args['camera_frame'], args['publish_frame'], np.eye(4)
         if self._camera_frame != self._publish_frame:
             self._tf_buffer = tf2_ros.Buffer()
             self._tf_listener = tf2_ros.TransformListener(self._tf_buffer, self._node)
         else: self._tf_buffer = None
-        self._publisher = self._node.create_publisher(PoseArray, "efficientpose_"+args_['camera_frame'], 10)
+
+        topic_base_str_ = "efficientpose_"+args['camera_frame']
+        self._pub_raw    = self._node.create_publisher(PoseArray, topic_base_str_+'_raw', 10)
+        self._pub_filtered = self._node.create_publisher(PoseArray, topic_base_str_+'_filtered', 10) if self._filters is not None else None
 
     def _send(self, img:np.ndarray) -> None:
         self._input_buffer[0,1:] = img.ravel()
@@ -84,13 +92,21 @@ class InferenceClient:
             self._camera_ext_mat = transform_to_matrix4x4(camera_stf_.transform)
 
         pose_arrays_ = { k:[] for k in self._object_index_map.values() }
+        filter_dict_ = { k:[] for k in self._object_index_map.values() }
         for label, score, rotation, translation in self._detections:
             m_local_ = translation_and_rotation_to_matrix4x4(translation, rotation)
-            pose_msg_ = matrix4x4_to_pose_msg(np.matmul(self._camera_ext_mat, m_local_))
-            pose_arrays_[label].append(pose_msg_)
+            m_wrt_output_frame_ = np.matmul(self._camera_ext_mat, m_local_)
+            pose_arrays_[label].append(matrix4x4_to_pose_msg(m_wrt_output_frame_))
+            filter_dict_[label].append(m_wrt_output_frame_)
 
         for label, pose_array in pose_arrays_.items():
-            self._publisher.publish(PoseArray(header=Header(frame_id=label, stamp=stamp_), poses=pose_array))
+            self._pub_raw.publish(PoseArray(header=Header(frame_id=label, stamp=stamp_), poses=pose_array))
+
+        if self._filters is not None:
+            for label, M in self._filters.step(filter_dict_).items():
+                if not len(M): continue
+                pose_array_ = [ matrix4x4_to_pose_msg(m) for m in M ]
+                self._pub_filtered.publish(PoseArray(header=Header(frame_id=label, stamp=stamp_), poses=pose_array_))
 
 
 

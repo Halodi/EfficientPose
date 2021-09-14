@@ -5,10 +5,22 @@
     "phi": 0,
     "score_threshold": 0.5,
     "translation_scale_norm": 1000.0,
-
     "max_detections": 10,
     "recv_timeout": 5.0,
-    
-    "camera_frame": "stereo_left",
-    "publish_frame": "stereo_left"
+
+    "filter":
+    {
+        "max_instances_per_label": 5,
+        "width": 10,
+        "translation_radius_threshold": 0.05,
+        "min_count": 3,
+        "clear_after_rejects": 5
+    },
+
+    "ros":
+    {
+        "namespace": "eve",
+        "camera_frame": "stereo_left",
+        "publish_frame": "stereo_left"
+    }
 }
