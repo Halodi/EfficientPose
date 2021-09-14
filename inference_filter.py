@@ -96,21 +96,20 @@ class FilterMulti:
         self._max_rejects = args['clear_after_rejects']
 
     def step(self, M:np.ndarray) -> Iterable[np.ndarray]:
-        if not len(M): return None
-
         filtered_poses_, claimed_ = [], [ False ] * len(M)
 
-        for filter in self._filters:
-            claimed_any_ = False
-            for i in range(len(M)):
-                if not claimed_[i] and filter.step(M[i]):
-                    mean_ = filter.mean()
-                    if mean_ is not None: filtered_poses_.append(mean_)
-                    claimed_any_ = claimed_[i] = True
+        if len(M):
+            for filter in self._filters:
+                claimed_any_ = False
+                for i in range(len(M)):
+                    if not claimed_[i] and filter.step(M[i]):
+                        mean_ = filter.mean()
+                        if mean_ is not None: filtered_poses_.append(mean_)
+                        claimed_any_ = claimed_[i] = True
 
-            if not claimed_any_:
-                filter.increment_rejects_counter()
-                if filter.rejects_counter == self._max_rejects: filter.clear()        
+                if not claimed_any_:
+                    filter.increment_rejects_counter()
+                    if filter.rejects_counter == self._max_rejects: filter.clear()
 
         return filtered_poses_
 
