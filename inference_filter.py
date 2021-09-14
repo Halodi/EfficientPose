@@ -95,21 +95,24 @@ class FilterMulti:
         self._filters = [ Filter(args) for i in range(args['max_instances_per_label']) ]
         self._max_rejects = args['clear_after_rejects']
 
-    def step(self, M:np.ndarray) -> Iterable[np.ndarray]:
-        filtered_poses_, claimed_ = [], [ False ] * len(M)
-
+    def step(self, M:Iterable[np.ndarray]) -> Iterable[np.ndarray]:
         if len(M):
+            m_claimed_ = [ False ] * len(M)
             for filter in self._filters:
-                claimed_any_ = False
+                filter_claimed_any_ = False
                 for i in range(len(M)):
-                    if not claimed_[i] and filter.step(M[i]):
-                        mean_ = filter.mean()
-                        if mean_ is not None: filtered_poses_.append(mean_)
-                        claimed_any_ = claimed_[i] = True
+                    if not m_claimed_[i] and filter.step(M[i]):
+                        filter_claimed_any_ = m_claimed_[i] = True
 
-                if not claimed_any_:
+                if not filter_claimed_any_:
                     filter.increment_rejects_counter()
                     if filter.rejects_counter == self._max_rejects: filter.clear()
+
+        filtered_poses_ = []
+        for filter in self._filters:
+            mean_ = filter.mean()
+            if mean_ is not None:
+                filtered_poses_.append(mean_)
 
         return filtered_poses_
 
