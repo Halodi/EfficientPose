@@ -14,7 +14,7 @@
         "width": 10,
         "translation_radius_threshold": 0.1,
         "min_count": 3,
-        "clear_after_rejects": 5
+        "clear_after_no_update_count": 5
     },
 
     "ros":

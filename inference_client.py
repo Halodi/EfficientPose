@@ -103,8 +103,8 @@ class InferenceClient:
             self._pub_raw.publish(PoseArray(header=Header(frame_id=label, stamp=stamp_), poses=pose_array))
 
         if self._filters is not None:
-            for label, M in self._filters.step(filter_dict_).items():
-                if not len(M): continue
+            self._filters.step(filter_dict_)
+            for label, M in self._filters.mean().items():
                 pose_array_ = [ matrix4x4_to_pose_msg(m) for m in M ]
                 self._pub_filtered.publish(PoseArray(header=Header(frame_id=label, stamp=stamp_), poses=pose_array_))
 

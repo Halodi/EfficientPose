@@ -1,6 +1,6 @@
-from textwrap import fill
 import numpy as np
-from typing import Iterable, Union, Dict
+from textwrap import fill
+from typing import Iterable, List, Union, Dict
 
 
 
@@ -50,14 +50,14 @@ class Filter:
         self.clear()
 
     @property
-    def rejects_counter(self): return self._rejects_counter
+    def nostep_counter(self): return self._nostep_counter
 
     def clear(self):
         self._window, self._wI = np.zeros(self._window_shape), 0
-        self._clear_rejects_counter()
+        self._clear_nostep_counter()
 
-    def _clear_rejects_counter(self): self._rejects_counter = 0
-    def increment_rejects_counter(self): self._rejects_counter += 1
+    def _clear_nostep_counter(self): self._nostep_counter = 0
+    def increment_nostep_counter(self): self._nostep_counter += 1
 
     def step(self, m:np.ndarray) -> bool:
         window_ = self._get_populated_window()
@@ -66,7 +66,7 @@ class Filter:
             if r2_ > self._radius_sq: return False
 
         self._window[self._wI] = np.copy(m)
-        self._clear_rejects_counter()
+        self._clear_nostep_counter()
 
         self._wI += 1
         if self._wI == self._window.shape[0]: self._wI = 0
@@ -93,21 +93,23 @@ class Filter:
 class FilterMulti:
     def __init__(self, args:dict):
         self._filters = [ Filter(args) for i in range(args['max_instances_per_label']) ]
-        self._max_rejects = args['clear_after_rejects']
+        self._max_nostep = args['clear_after_no_update_count']
 
-    def step(self, M:Iterable[np.ndarray]) -> Iterable[np.ndarray]:
-        if len(M):
-            m_claimed_ = [ False ] * len(M)
-            for filter in self._filters:
-                filter_claimed_any_ = False
-                for i in range(len(M)):
-                    if not m_claimed_[i] and filter.step(M[i]):
-                        filter_claimed_any_ = m_claimed_[i] = True
+    def step(self, M:Iterable[np.ndarray]) -> List[bool]:
+        m_claimed_ = [ False ] * len(M)
+        for filter in self._filters:
+            filter_claimed_any_ = False
+            for i in range(len(M)):
+                if not m_claimed_[i] and filter.step(M[i]):
+                    filter_claimed_any_ = m_claimed_[i] = True
 
-                if not filter_claimed_any_:
-                    filter.increment_rejects_counter()
-                    if filter.rejects_counter == self._max_rejects: filter.clear()
+            if not filter_claimed_any_:
+                filter.increment_nostep_counter()
+                if filter.nostep_counter == self._max_nostep: filter.clear()
 
+        return m_claimed_
+
+    def mean(self) -> List[np.ndarray]:
         filtered_poses_ = []
         for filter in self._filters:
             mean_ = filter.mean()
@@ -124,7 +126,7 @@ class FilterMultiLabels:
 
     def __getitem__(self, label:str): return self._filters.get(label)
 
-    def step(self, M_dict:Dict[str,Iterable[np.ndarray]]) -> Dict[str,Iterable[np.ndarray]]:
+    def step(self, M_dict:Dict[str,Iterable[np.ndarray]]) -> Dict[str,List[bool]]:
         out_ = {}
         for label, M in M_dict.items():
             filter_ = self[label]
@@ -132,3 +134,6 @@ class FilterMultiLabels:
                 out_[label] = filter_.step(M)
 
         return out_
+
+    def mean(self) -> Dict[str,List[np.ndarray]]:
+        return { label:filter.mean() for label,filter in self._filters.items() }
