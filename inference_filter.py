@@ -41,7 +41,7 @@ def rotational_mean(M:Iterable[np.ndarray]) -> np.ndarray:
     tuv_mean_pos_ = np.mean(transformed_unit_vectors_, axis=0)
     return kabsch(tuv_mean_pos_, FILTER_UNIT_VECTORS)
 
-    
+
 
 class Filter:
     def __init__(self, args:dict):
@@ -112,7 +112,7 @@ class FilterMulti:
                 filter.increment_rejects_counter()
                 if filter.rejects_counter == self._max_rejects: filter.clear()        
 
-        return np.array(filtered_poses_) if len(filtered_poses_) else None
+        return filtered_poses_
 
 
 
@@ -122,12 +122,11 @@ class FilterMultiLabels:
 
     def __getitem__(self, label:str): return self._filters.get(label)
 
-    def step(self, M_dict:Dict[str,Iterable[np.ndarray]]) -> Dict[str,np.ndarray]:
+    def step(self, M_dict:Dict[str,Iterable[np.ndarray]]) -> Dict[str,Iterable[np.ndarray]]:
         out_ = {}
         for label, M in M_dict.items():
             filter_ = self[label]
             if filter_ is not None:
-                filter_out_ = filter_.step(M)
-                if filter_out_ is not None: out_[label] = filter_out_
+                out_[label] = filter_.step(M)
 
         return out_
